@@ -36,6 +36,32 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class ProductControllerTest {
 
+    private static final String API_PRODUCTS_URL = "/api/products";
+    private static final String API_PRODUCTS_SEARCH_URL = "/api/products/search";
+    private static final String ADMIN_USER = "admin";
+    private static final String NORMAL_USER = "user";
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_USER = "USER";
+    private static final String PRODUCT_NAME = "Product";
+    private static final String PRODUCT_DESCRIPTION = "Description";
+    private static final String PRODUCT_NAME_1 = "Product1";
+    private static final String PRODUCT_NAME_2 = "Product2";
+    private static final String DESCRIPTION_1 = "Description1";
+    private static final String DESCRIPTION_2 = "Description2";
+    private static final String TEST_PRODUCT_NAME = "Test Product";
+    private static final String UPDATED_PRODUCT_NAME = "Updated Product";
+    private static final String UPDATED_DESCRIPTION = "Updated Description";
+    private static final String PARAM_NAME = "name";
+    private static final String PARAM_MIN_PRICE = "minPrice";
+    private static final String PARAM_MAX_PRICE = "maxPrice";
+    private static final String PARAM_IN_STOCK = "inStock";
+    private static final String TEST_SEARCH_TERM = "Test";
+    private static final Long PRODUCT_ID_1 = 1L;
+    private static final Long PRODUCT_ID_2 = 2L;
+    private static final Long NON_EXISTENT_ID = 999L;
+    private static final int STOCK_QUANTITY_5 = 5;
+    private static final int STOCK_QUANTITY_10 = 10;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -58,29 +84,29 @@ class ProductControllerTest {
     private DeleteProductUseCase deleteProductUseCase;
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = ADMIN_USER, roles = ROLE_ADMIN)
     void shouldCreateProduct() throws Exception {
-        ProductRequest request = new ProductRequest("Product", "Description", new BigDecimal("10.00"), 5);
-        ProductResponse response = new ProductResponse(1L, "Product", "Description", new BigDecimal("10.00"), 5, true);
+        ProductRequest request = new ProductRequest(PRODUCT_NAME, PRODUCT_DESCRIPTION, new BigDecimal("10.00"), STOCK_QUANTITY_5);
+        ProductResponse response = new ProductResponse(PRODUCT_ID_1, PRODUCT_NAME, PRODUCT_DESCRIPTION, new BigDecimal("10.00"), STOCK_QUANTITY_5, true);
 
         when(createProductUseCase.execute(any(ProductRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(API_PRODUCTS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(1))
-            .andExpect(jsonPath("$.name").value("Product"))
+            .andExpect(jsonPath("$.name").value(PRODUCT_NAME))
             .andExpect(jsonPath("$.price").value(10.00));
     }
 
     @Test
-    @WithMockUser(username = "user", roles = "USER")
+    @WithMockUser(username = NORMAL_USER, roles = ROLE_USER)
     void shouldReturn403WhenNonAdminCreatesProduct() throws Exception {
-        ProductRequest request = new ProductRequest("Product", "Description", new BigDecimal("10.00"), 5);
+        ProductRequest request = new ProductRequest(PRODUCT_NAME, PRODUCT_DESCRIPTION, new BigDecimal("10.00"), STOCK_QUANTITY_5);
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(API_PRODUCTS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -89,12 +115,12 @@ class ProductControllerTest {
 
     @Test
     void shouldGetAllProductsWithoutAuthentication() throws Exception {
-        ProductResponse response1 = new ProductResponse(1L, "Product1", "Description1", new BigDecimal("10.00"), 5, true);
-        ProductResponse response2 = new ProductResponse(2L, "Product2", "Description2", new BigDecimal("20.00"), 10, true);
+        ProductResponse response1 = new ProductResponse(PRODUCT_ID_1, PRODUCT_NAME_1, DESCRIPTION_1, new BigDecimal("10.00"), STOCK_QUANTITY_5, true);
+        ProductResponse response2 = new ProductResponse(PRODUCT_ID_2, PRODUCT_NAME_2, DESCRIPTION_2, new BigDecimal("20.00"), STOCK_QUANTITY_10, true);
 
         when(getAllProductsUseCase.execute()).thenReturn(Arrays.asList(response1, response2));
 
-        mockMvc.perform(get("/api/products"))
+        mockMvc.perform(get(API_PRODUCTS_URL))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
             .andExpect(jsonPath("$[0].id").value(1))
@@ -105,7 +131,7 @@ class ProductControllerTest {
     void shouldReturnEmptyListWhenNoProducts() throws Exception {
         when(getAllProductsUseCase.execute()).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(get("/api/products"))
+        mockMvc.perform(get(API_PRODUCTS_URL))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
             .andExpect(jsonPath("$").isEmpty());
@@ -113,73 +139,71 @@ class ProductControllerTest {
 
     @Test
     void shouldSearchProductsByName() throws Exception {
-        ProductResponse response = new ProductResponse(1L, "Test Product", "Description", new BigDecimal("10.00"), 5, true);
+        ProductResponse response = new ProductResponse(PRODUCT_ID_1, TEST_PRODUCT_NAME, PRODUCT_DESCRIPTION, new BigDecimal("10.00"), STOCK_QUANTITY_5, true);
 
-        when(searchProductsUseCase.execute(eq("Test"), eq(null), eq(null), eq(null)))
+        when(searchProductsUseCase.execute(eq(TEST_SEARCH_TERM), eq(null), eq(null), eq(null)))
             .thenReturn(Arrays.asList(response));
 
-        mockMvc.perform(get("/api/products/search")
-                .param("name", "Test"))
+        mockMvc.perform(get(API_PRODUCTS_SEARCH_URL)
+                .param(PARAM_NAME, TEST_SEARCH_TERM))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$[0].name").value("Test Product"));
+            .andExpect(jsonPath("$[0].name").value(TEST_PRODUCT_NAME));
     }
 
     @Test
     void shouldSearchProductsByPriceRange() throws Exception {
-        ProductResponse response = new ProductResponse(1L, "Product", "Description", new BigDecimal("25.00"), 5, true);
+        ProductResponse response = new ProductResponse(PRODUCT_ID_1, PRODUCT_NAME, PRODUCT_DESCRIPTION, new BigDecimal("25.00"), STOCK_QUANTITY_5, true);
 
         when(searchProductsUseCase.execute(eq(null), eq(new BigDecimal("10.00")), eq(new BigDecimal("50.00")), eq(null)))
             .thenReturn(Arrays.asList(response));
 
-        mockMvc.perform(get("/api/products/search")
-                .param("minPrice", "10.00")
-                .param("maxPrice", "50.00"))
+        mockMvc.perform(get(API_PRODUCTS_SEARCH_URL)
+                .param(PARAM_MIN_PRICE, "10.00")
+                .param(PARAM_MAX_PRICE, "50.00"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].price").value(25.00));
     }
 
     @Test
     void shouldSearchInStockProducts() throws Exception {
-        ProductResponse response = new ProductResponse(1L, "Product", "Description", new BigDecimal("10.00"), 5, true);
+        ProductResponse response = new ProductResponse(PRODUCT_ID_1, PRODUCT_NAME, PRODUCT_DESCRIPTION, new BigDecimal("10.00"), STOCK_QUANTITY_5, true);
 
         when(searchProductsUseCase.execute(eq(null), eq(null), eq(null), eq(true)))
             .thenReturn(Arrays.asList(response));
 
-        mockMvc.perform(get("/api/products/search")
-                .param("inStock", "true"))
+        mockMvc.perform(get(API_PRODUCTS_SEARCH_URL)
+                .param(PARAM_IN_STOCK, "true"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].inStock").value(true));
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = ADMIN_USER, roles = ROLE_ADMIN)
     void shouldUpdateProduct() throws Exception {
-        Long id = 1L;
-        ProductRequest request = new ProductRequest("Updated Product", "Updated Description", new BigDecimal("20.00"), 10);
-        ProductResponse response = new ProductResponse(id, "Updated Product", "Updated Description", new BigDecimal("20.00"), 10, true);
+        ProductRequest request = new ProductRequest(UPDATED_PRODUCT_NAME, UPDATED_DESCRIPTION, new BigDecimal("20.00"), STOCK_QUANTITY_10);
+        ProductResponse response = new ProductResponse(PRODUCT_ID_1, UPDATED_PRODUCT_NAME, UPDATED_DESCRIPTION, new BigDecimal("20.00"), STOCK_QUANTITY_10, true);
 
-        when(updateProductUseCase.execute(eq(id), any(ProductRequest.class))).thenReturn(response);
+        when(updateProductUseCase.execute(eq(PRODUCT_ID_1), any(ProductRequest.class))).thenReturn(response);
 
-        mockMvc.perform(put("/api/products/{id}", id)
+        mockMvc.perform(put(API_PRODUCTS_URL + "/{id}", PRODUCT_ID_1)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.name").value("Updated Product"))
+            .andExpect(jsonPath("$.name").value(UPDATED_PRODUCT_NAME))
             .andExpect(jsonPath("$.price").value(20.00));
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = ADMIN_USER, roles = ROLE_ADMIN)
     void shouldReturn404WhenUpdatingNonExistentProduct() throws Exception {
-        Long id = 999L;
-        ProductRequest request = new ProductRequest("Product", "Description", new BigDecimal("10.00"), 5);
+        ProductRequest request = new ProductRequest(PRODUCT_NAME, PRODUCT_DESCRIPTION, new BigDecimal("10.00"), STOCK_QUANTITY_5);
 
-        when(updateProductUseCase.execute(eq(id), any(ProductRequest.class)))
-            .thenThrow(new ProductNotFoundException("Product not found with id: " + id));
+        when(updateProductUseCase.execute(eq(NON_EXISTENT_ID), any(ProductRequest.class)))
+            .thenThrow(new ProductNotFoundException("Product not found with id: " + NON_EXISTENT_ID));
 
-        mockMvc.perform(put("/api/products/{id}", id)
+        mockMvc.perform(put(API_PRODUCTS_URL + "/{id}", NON_EXISTENT_ID)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -187,42 +211,38 @@ class ProductControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = ADMIN_USER, roles = ROLE_ADMIN)
     void shouldDeleteProduct() throws Exception {
-        Long id = 1L;
-
-        mockMvc.perform(delete("/api/products/{id}", id)
+        mockMvc.perform(delete(API_PRODUCTS_URL + "/{id}", PRODUCT_ID_1)
                 .with(csrf()))
             .andExpect(status().isNoContent());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = ADMIN_USER, roles = ROLE_ADMIN)
     void shouldReturn404WhenDeletingNonExistentProduct() throws Exception {
-        Long id = 999L;
+        doThrow(new ProductNotFoundException("Product not found with id: " + NON_EXISTENT_ID))
+            .when(deleteProductUseCase).execute(NON_EXISTENT_ID);
 
-        doThrow(new ProductNotFoundException("Product not found with id: " + id))
-            .when(deleteProductUseCase).execute(id);
-
-        mockMvc.perform(delete("/api/products/{id}", id)
+        mockMvc.perform(delete(API_PRODUCTS_URL + "/{id}", NON_EXISTENT_ID)
                 .with(csrf()))
             .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser(username = "user", roles = "USER")
+    @WithMockUser(username = NORMAL_USER, roles = ROLE_USER)
     void shouldReturn403WhenNonAdminDeletesProduct() throws Exception {
-        mockMvc.perform(delete("/api/products/{id}", 1L)
+        mockMvc.perform(delete(API_PRODUCTS_URL + "/{id}", PRODUCT_ID_1)
                 .with(csrf()))
             .andExpect(status().isForbidden());
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "ADMIN")
+    @WithMockUser(username = ADMIN_USER, roles = ROLE_ADMIN)
     void shouldReturn400WhenCreateProductWithInvalidData() throws Exception {
-        ProductRequest request = new ProductRequest("", "Description", new BigDecimal("-10.00"), -5);
+        ProductRequest request = new ProductRequest("", PRODUCT_DESCRIPTION, new BigDecimal("-10.00"), -5);
 
-        mockMvc.perform(post("/api/products")
+        mockMvc.perform(post(API_PRODUCTS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))

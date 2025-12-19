@@ -30,6 +30,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class AuthControllerTest {
 
+    private static final String API_AUTH_LOGIN_URL = "/api/auth/login";
+    private static final String TEST_USER = "testuser";
+    private static final String NON_EXISTENT_USER = "nonexistent";
+    private static final String PASSWORD = "password";
+    private static final String JWT_TOKEN = "jwt.token.here";
+    private static final String USER_NOT_FOUND_MESSAGE = "User not found";
+    private static final String JSON_PASSWORD_ONLY = "{\"password\":\"password\"}";
+    private static final String JSON_USERNAME_ONLY = "{\"username\":\"testuser\"}";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -41,27 +50,27 @@ class AuthControllerTest {
 
     @Test
     void shouldLoginSuccessfully() throws Exception {
-        AuthRequest request = new AuthRequest("testuser", "password");
-        AuthResponse response = new AuthResponse("jwt.token.here");
+        AuthRequest request = new AuthRequest(TEST_USER, PASSWORD);
+        AuthResponse response = new AuthResponse(JWT_TOKEN);
 
         when(authenticateUserUseCase.execute(any(AuthRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(API_AUTH_LOGIN_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.token").value("jwt.token.here"));
+            .andExpect(jsonPath("$.token").value(JWT_TOKEN));
     }
 
     @Test
     void shouldReturn404WhenUserNotFound() throws Exception {
-        AuthRequest request = new AuthRequest("nonexistent", "password");
+        AuthRequest request = new AuthRequest(NON_EXISTENT_USER, PASSWORD);
 
         when(authenticateUserUseCase.execute(any(AuthRequest.class)))
-            .thenThrow(new UserNotFoundException("User not found"));
+            .thenThrow(new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(API_AUTH_LOGIN_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -72,7 +81,7 @@ class AuthControllerTest {
     void shouldReturn400WhenRequestIsInvalid() throws Exception {
         AuthRequest request = new AuthRequest("", "");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(API_AUTH_LOGIN_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -81,23 +90,19 @@ class AuthControllerTest {
 
     @Test
     void shouldReturn400WhenUsernameIsMissing() throws Exception {
-        String requestJson = "{\"password\":\"password\"}";
-
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(API_AUTH_LOGIN_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
+                .content(JSON_PASSWORD_ONLY))
             .andExpect(status().isBadRequest());
     }
 
     @Test
     void shouldReturn400WhenPasswordIsMissing() throws Exception {
-        String requestJson = "{\"username\":\"testuser\"}";
-
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post(API_AUTH_LOGIN_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
+                .content(JSON_USERNAME_ONLY))
             .andExpect(status().isBadRequest());
     }
 }

@@ -37,6 +37,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 class OrderControllerTest {
 
+    private static final String API_ORDERS_URL = "/api/orders";
+    private static final String TEST_USER = "testuser";
+    private static final String PREMIUM_USER = "premiumuser";
+    private static final String OUT_OF_STOCK_MESSAGE = "Product is out of stock";
+    private static final String ROLE_USER = "USER";
+    private static final String ROLE_PREMIUM_USER = "PREMIUM_USER";
+    private static final Long PRODUCT_ID_1 = 1L;
+    private static final Long USER_ID_1 = 1L;
+    private static final int QUANTITY_ONE = 1;
+    private static final int QUANTITY_TWO = 2;
+    private static final int QUANTITY_HUNDRED = 100;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -47,19 +59,19 @@ class OrderControllerTest {
     private PlaceOrderUseCase placeOrderUseCase;
 
     @Test
-    @WithMockUser(username = "testuser", roles = "USER")
+    @WithMockUser(username = TEST_USER, roles = ROLE_USER)
     void shouldPlaceOrderSuccessfully() throws Exception {
-        OrderItemRequest itemRequest = new OrderItemRequest(1L, 2);
+        OrderItemRequest itemRequest = new OrderItemRequest(PRODUCT_ID_1, QUANTITY_TWO);
         OrderRequest request = new OrderRequest(Arrays.asList(itemRequest));
         
-        OrderItemResponse itemResponse = new OrderItemResponse(1L, 1L, 2, 
+        OrderItemResponse itemResponse = new OrderItemResponse(PRODUCT_ID_1, PRODUCT_ID_1, QUANTITY_TWO, 
             new BigDecimal("50.00"), BigDecimal.ZERO, new BigDecimal("100.00"));
-        OrderResponse response = new OrderResponse(1L, 1L, 
+        OrderResponse response = new OrderResponse(PRODUCT_ID_1, USER_ID_1, 
             Arrays.asList(itemResponse), new BigDecimal("100.00"), Instant.now());
 
-        when(placeOrderUseCase.execute(any(OrderRequest.class), eq("testuser"))).thenReturn(response);
+        when(placeOrderUseCase.execute(any(OrderRequest.class), eq(TEST_USER))).thenReturn(response);
 
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post(API_ORDERS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -71,19 +83,19 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "premiumuser", roles = "PREMIUM_USER")
+    @WithMockUser(username = PREMIUM_USER, roles = ROLE_PREMIUM_USER)
     void shouldPlaceOrderAsPremiumUser() throws Exception {
-        OrderItemRequest itemRequest = new OrderItemRequest(1L, 1);
+        OrderItemRequest itemRequest = new OrderItemRequest(PRODUCT_ID_1, QUANTITY_ONE);
         OrderRequest request = new OrderRequest(Arrays.asList(itemRequest));
         
-        OrderItemResponse itemResponse = new OrderItemResponse(1L, 1L, 1, 
+        OrderItemResponse itemResponse = new OrderItemResponse(PRODUCT_ID_1, PRODUCT_ID_1, QUANTITY_ONE, 
             new BigDecimal("100.00"), new BigDecimal("10.00"), new BigDecimal("100.00"));
-        OrderResponse response = new OrderResponse(1L, 1L, 
+        OrderResponse response = new OrderResponse(PRODUCT_ID_1, USER_ID_1, 
             Arrays.asList(itemResponse), new BigDecimal("90.00"), Instant.now());
 
-        when(placeOrderUseCase.execute(any(OrderRequest.class), eq("premiumuser"))).thenReturn(response);
+        when(placeOrderUseCase.execute(any(OrderRequest.class), eq(PREMIUM_USER))).thenReturn(response);
 
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post(API_ORDERS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -93,10 +105,10 @@ class OrderControllerTest {
 
     @Test
     void shouldReturn403WhenNotAuthenticated() throws Exception {
-        OrderItemRequest itemRequest = new OrderItemRequest(1L, 1);
+        OrderItemRequest itemRequest = new OrderItemRequest(PRODUCT_ID_1, QUANTITY_ONE);
         OrderRequest request = new OrderRequest(Arrays.asList(itemRequest));
 
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post(API_ORDERS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -104,15 +116,15 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "testuser", roles = "USER")
+    @WithMockUser(username = TEST_USER, roles = ROLE_USER)
     void shouldReturn400WhenOutOfStock() throws Exception {
-        OrderItemRequest itemRequest = new OrderItemRequest(1L, 100);
+        OrderItemRequest itemRequest = new OrderItemRequest(PRODUCT_ID_1, QUANTITY_HUNDRED);
         OrderRequest request = new OrderRequest(Arrays.asList(itemRequest));
 
-        when(placeOrderUseCase.execute(any(OrderRequest.class), eq("testuser")))
-            .thenThrow(new OutOfStockException("Product is out of stock"));
+        when(placeOrderUseCase.execute(any(OrderRequest.class), eq(TEST_USER)))
+            .thenThrow(new OutOfStockException(OUT_OF_STOCK_MESSAGE));
 
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post(API_ORDERS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -120,11 +132,11 @@ class OrderControllerTest {
     }
 
     @Test
-    @WithMockUser(username = "testuser", roles = "USER")
+    @WithMockUser(username = TEST_USER, roles = ROLE_USER)
     void shouldReturn400WhenRequestIsInvalid() throws Exception {
         OrderRequest request = new OrderRequest(Arrays.asList());
 
-        mockMvc.perform(post("/api/orders")
+        mockMvc.perform(post(API_ORDERS_URL)
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))

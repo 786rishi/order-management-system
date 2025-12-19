@@ -7,21 +7,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class JwtTokenProviderTest {
 
+    private static final String JWT_SECRET = "mySecretKeyForJWTTokenGenerationAndValidationThatNeedsToBeAtLeast256BitsLong12345678";
+    private static final long JWT_EXPIRATION = 3600000L;
+    private static final String TEST_USER = "testuser";
+    private static final String ROLE_USER = "USER";
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_PREMIUM_USER = "PREMIUM_USER";
+    private static final String ADMIN_USER = "admin";
+    private static final String USER_1 = "user1";
+    private static final String USER_2 = "user2";
+    private static final String INVALID_TOKEN = "invalid.token.here";
+    private static final int LONG_USERNAME_LENGTH = 100;
+
     private JwtTokenProvider jwtTokenProvider;
-    private String secret = "mySecretKeyForJWTTokenGenerationAndValidationThatNeedsToBeAtLeast256BitsLong12345678";
-    private long expirationTime = 3600000;
 
     @BeforeEach
     void setUp() {
-        jwtTokenProvider = new JwtTokenProvider(secret, expirationTime);
+        jwtTokenProvider = new JwtTokenProvider(JWT_SECRET, JWT_EXPIRATION);
     }
 
     @Test
     void shouldGenerateToken() {
-        String username = "testuser";
-        String role = "USER";
-
-        String token = jwtTokenProvider.generateToken(username, role);
+        String token = jwtTokenProvider.generateToken(TEST_USER, ROLE_USER);
 
         assertThat(token).isNotNull();
         assertThat(token).isNotEmpty();
@@ -29,31 +36,25 @@ class JwtTokenProviderTest {
 
     @Test
     void shouldExtractUsernameFromToken() {
-        String username = "testuser";
-        String role = "USER";
-        String token = jwtTokenProvider.generateToken(username, role);
+        String token = jwtTokenProvider.generateToken(TEST_USER, ROLE_USER);
 
         String extractedUsername = jwtTokenProvider.getUsernameFromToken(token);
 
-        assertThat(extractedUsername).isEqualTo(username);
+        assertThat(extractedUsername).isEqualTo(TEST_USER);
     }
 
     @Test
     void shouldExtractRoleFromToken() {
-        String username = "testuser";
-        String role = "PREMIUM_USER";
-        String token = jwtTokenProvider.generateToken(username, role);
+        String token = jwtTokenProvider.generateToken(TEST_USER, ROLE_PREMIUM_USER);
 
         String extractedRole = jwtTokenProvider.getRoleFromToken(token);
 
-        assertThat(extractedRole).isEqualTo(role);
+        assertThat(extractedRole).isEqualTo(ROLE_PREMIUM_USER);
     }
 
     @Test
     void shouldValidateToken() {
-        String username = "testuser";
-        String role = "USER";
-        String token = jwtTokenProvider.generateToken(username, role);
+        String token = jwtTokenProvider.generateToken(TEST_USER, ROLE_USER);
 
         boolean isValid = jwtTokenProvider.validateToken(token);
 
@@ -62,36 +63,31 @@ class JwtTokenProviderTest {
 
     @Test
     void shouldReturnFalseForInvalidToken() {
-        String invalidToken = "invalid.token.here";
-
-        boolean isValid = jwtTokenProvider.validateToken(invalidToken);
+        boolean isValid = jwtTokenProvider.validateToken(INVALID_TOKEN);
 
         assertThat(isValid).isFalse();
     }
 
     @Test
     void shouldGenerateTokenForAdmin() {
-        String username = "admin";
-        String role = "ADMIN";
-
-        String token = jwtTokenProvider.generateToken(username, role);
+        String token = jwtTokenProvider.generateToken(ADMIN_USER, ROLE_ADMIN);
         String extractedRole = jwtTokenProvider.getRoleFromToken(token);
 
-        assertThat(extractedRole).isEqualTo("ADMIN");
+        assertThat(extractedRole).isEqualTo(ROLE_ADMIN);
     }
 
     @Test
     void shouldGenerateDifferentTokensForDifferentUsers() {
-        String token1 = jwtTokenProvider.generateToken("user1", "USER");
-        String token2 = jwtTokenProvider.generateToken("user2", "USER");
+        String token1 = jwtTokenProvider.generateToken(USER_1, ROLE_USER);
+        String token2 = jwtTokenProvider.generateToken(USER_2, ROLE_USER);
 
         assertThat(token1).isNotEqualTo(token2);
     }
 
     @Test
     void shouldHandleLongUsernames() {
-        String longUsername = "a".repeat(100);
-        String token = jwtTokenProvider.generateToken(longUsername, "USER");
+        String longUsername = "a".repeat(LONG_USERNAME_LENGTH);
+        String token = jwtTokenProvider.generateToken(longUsername, ROLE_USER);
 
         String extractedUsername = jwtTokenProvider.getUsernameFromToken(token);
 
