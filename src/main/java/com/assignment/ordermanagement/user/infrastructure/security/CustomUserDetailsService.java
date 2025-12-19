@@ -2,6 +2,7 @@ package com.assignment.ordermanagement.user.infrastructure.security;
 
 import com.assignment.ordermanagement.user.domain.model.User;
 import com.assignment.ordermanagement.user.domain.port.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

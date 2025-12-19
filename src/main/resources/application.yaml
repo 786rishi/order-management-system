@@ -46,5 +46,5 @@ springdoc:
 
 jwt:
   secret: mySecretKeyForJWTTokenGenerationThatIsLongEnough123456789
-  expiration: 86400000  # 24 hours in milliseconds
+  expiration: 86400000
 

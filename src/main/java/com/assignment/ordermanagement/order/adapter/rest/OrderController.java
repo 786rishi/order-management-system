@@ -33,7 +33,6 @@ public class OrderController {
     public ResponseEntity<OrderResponse> placeOrder(
             @Valid @RequestBody OrderRequest request,
             Authentication authentication) {
-        
         String username = authentication.getName();
         OrderResponse response = placeOrderUseCase.execute(request, username);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

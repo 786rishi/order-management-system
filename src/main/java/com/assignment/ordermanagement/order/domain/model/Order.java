@@ -31,26 +31,10 @@ public class Order {
         this.createdAt = createdAt;
     }
 
-//    // Business methods
-//    public void addItem(OrderItem item) {
-//        this.items.add(item);
-//        recalculateTotal();
-//    }
-
     public void addItems(List<OrderItem> items) {
         this.items.addAll(items);
         recalculateTotal();
     }
-
-//    public void applyDiscount(BigDecimal discount) {
-//        if (discount.compareTo(BigDecimal.ZERO) < 0) {
-//            throw new IllegalArgumentException("Discount cannot be negative");
-//        }
-//        if (discount.compareTo(orderTotal) > 0) {
-//            throw new IllegalArgumentException("Discount cannot exceed order total");
-//        }
-//        this.orderTotal = this.orderTotal.subtract(discount);
-//    }
 
     public BigDecimal calculateSubtotal() {
         return items.stream()

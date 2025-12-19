@@ -1,6 +1,6 @@
 # Order Management System
 
-A robust, enterprise-grade Order Management System built with Spring Boot, implementing Clean Architecture principles with a focus on maintainability, testability, and scalability.
+A Order Management System built with Spring Boot, implementing Clean Architecture principles with a focus on maintainability, testability, and scalability.
 
 ## Table of Contents
 
@@ -18,15 +18,15 @@ A robust, enterprise-grade Order Management System built with Spring Boot, imple
 
 ## Overview
 
-This Order Management System is a full-featured application that handles product catalog management, user authentication, and order processing with intelligent discount strategies. The system is designed with enterprise best practices, including JWT-based authentication, role-based access control, caching, and comprehensive error handling.
+This Order Management System is a full-featured application that handles product listing, user authentication, and order processing with intelligent discount strategies. The system is designed with enterprise best practices, including JWT-based authentication, role-based access control, caching, and comprehensive error handling.
 
 ## Key Features
 
 ### 🛍️ Product Management
 - CRUD operations for products (Admin only)
-- Public product listing and search
+- product listing and search
 - Advanced filtering (by name, price range, stock availability)
-- Redis-style caching for improved performance
+- caching for improved performance
 - Soft delete functionality
 
 ### 👤 User Authentication & Authorization
@@ -71,7 +71,6 @@ This Order Management System is a full-featured application that handles product
 ### Build & DevOps
 - **Maven** - Build Tool
 - **Lombok** - Boilerplate Code Reduction
-- **MapStruct** - Object Mapping
 
 ### Additional Libraries
 - **Jackson** - JSON Processing
