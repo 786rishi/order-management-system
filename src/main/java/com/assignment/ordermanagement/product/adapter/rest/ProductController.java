@@ -58,7 +58,7 @@ public class ProductController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search products with filters (Public access)")
+    @Operation(summary = "Search products with filters")
     public ResponseEntity<List<ProductResponse>> searchProducts(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) BigDecimal minPrice,
